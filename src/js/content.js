@@ -63,10 +63,6 @@ class FieldBox {
             padding: 10px;
         `;
 
-        // Create a text element for the box size
-        const sizeText = document.createElement('div');
-
-        // Create an image button
         const imageButton = document.createElement('img');
         imageButton.src = chrome.runtime.getURL('icons/48x48_logo__b_off.png');
         imageButton.alt = 'Button';
@@ -88,12 +84,10 @@ class FieldBox {
         });
 
         imageButton.addEventListener('click', () => {
-            // Add your click handler here
-            console.log('Image button clicked');
+            
         });
 
         // Append elements to the box
-        box.appendChild(sizeText);
         box.appendChild(imageButton);
 
         box.setAttribute('data-login-detector-overlay', 'true');
@@ -213,5 +207,4 @@ class LoginFieldDetector {
     }
 }
 
-// Initialize the detector
 new LoginFieldDetector();
