@@ -1,3 +1,64 @@
+const { default: Finder } = import(chrome.runtime.getURL('src/js/modules/finder/index.js'));
+
+let timeout;
+let observer;
+
+function Observer() {
+    observer = new MutationObserver((mutations) => {
+        if (mutations.some(m => {
+            return Array.from(m.addedNodes).some(node =>
+                node.nodeType === 1 &&
+                node.querySelector('input')
+            );
+        })) {
+            console.log("timeout");
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const session = new Finder(window, document);
+
+                const test = session.fields(`
+                        input[type="password"],
+                        input[type="email"],
+                        input[name*="email"],
+                        input[name*="user"],
+                        input[name*="login"],
+                        input[id*="email"],
+                        input[id*="user"],
+                        input[id*="login"]
+                `).catch((err) => console.log(err)).then((output) => {
+                    console.log(output);
+                }).finally((output) => {
+                    console.log(output);
+                });
+
+                console.log("Hello");
+
+                console.log(test);
+            }, 300);
+        }
+    });
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => Observer());
+} else {
+    Observer()
+}
+
+let lastUrl = window.location.href;
+new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        Observer()
+    }
+}).observe(document, { subtree: true, childList: true })
+
+/*
 // content.js
 
 class FieldBox {
@@ -20,9 +81,36 @@ class FieldBox {
     }
 
     #addEventListeners() {
-        window.addEventListener('resize', this.#updatePosition.bind(this));
-        window.addEventListener('scroll', this.#updatePosition.bind(this));
+        const resizeObserver = new ResizeObserver(() => {
+            this.#scheduleUpdate();
+        });
+        resizeObserver.observe(this.#field);
+
+        window.addEventListener('scroll', () => this.#scheduleUpdate());
+        window.addEventListener('resize', () => this.#scheduleUpdate());
+
+        const mutationObserver = new MutationObserver(() => {
+            this.#scheduleUpdate();
+        });
+
+        mutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            characterData: true
+        });
     }
+
+    #scheduleUpdate() {
+        if (!this.updateScheduled) {
+            this.updateScheduled = true;
+            requestAnimationFrame(() => {
+                this.#updatePosition();
+                this.updateScheduled = false;
+            });
+        }
+    }
+
 
     #updatePosition() {
         if (!this.#box) return;
@@ -84,7 +172,7 @@ class FieldBox {
         });
 
         imageButton.addEventListener('click', () => {
-            
+
         });
 
         // Append elements to the box
@@ -143,9 +231,29 @@ class LoginFieldDetector {
         this.#setupMutationObserver();
     }
 
+    #findConfirmPasswordField(passwordFields) {
+        if (passwordFields.length !== 2) return null; 
+
+        const sortedFields = passwordFields.sort((a, b) => {
+            return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+        });
+
+        const [firstField, secondField] = sortedFields;
+        const verticalDistance = Math.abs(secondField.getBoundingClientRect().top - firstField.getBoundingClientRect().top);
+        const averageHeight = (firstField.offsetHeight + secondField.offsetHeight) / 2;
+
+        if (verticalDistance <= averageHeight * 2) {
+            if (!secondField.value || (firstField.placeholder && secondField.placeholder && firstField.placeholder.length === secondField.placeholder.length)) {
+                return secondField;
+            }
+        }
+
+        return null;
+    }
+
     #findAndPrintFields() {
         this.#clearExistingOverlays();
-
+    
         console.log('Searching for fields...');
         const inputFields = Array.from(document.querySelectorAll(`
             input[type="password"],
@@ -156,20 +264,38 @@ class LoginFieldDetector {
             input[id*="email"],
             input[id*="user"],
             input[id*="login"]
-        `)).filter(field => {
+        `));
+        
+        const passwordFields = inputFields.filter(field => field.type === 'password');
+        let confirmPasswordField = null;
+        
+        if (passwordFields.length > 1) {
+            confirmPasswordField = this.#findConfirmPasswordField(passwordFields);
+            if (confirmPasswordField) {
+                console.log('Potential confirm password field found:', confirmPasswordField);
+            }
+        }
+        
+        const filteredInputFields = inputFields.filter(field => {
             const style = window.getComputedStyle(field);
-            return style.display !== 'none' && style.visibility !== 'hidden';
+            return style.display !== 'none' && 
+                   style.visibility !== 'hidden' && 
+                   field !== confirmPasswordField;
         });
-
-        console.log(`Found ${inputFields.length} input fields`);
+        
+        console.log(`Found ${filteredInputFields.length} input fields (excluding confirm password)`);
         this.#logPageInfo();
-
-        if (inputFields.length === 0) {
+    
+        if (filteredInputFields.length === 0) {
             console.log('No login-related fields found.');
             return;
         }
-
-        this.#logFieldDetails(inputFields);
+    
+        this.#logFieldDetails(filteredInputFields);
+       
+        if (confirmPasswordField) {
+            console.log('Handling confirm password field separately');
+        }
     }
 
     #logPageInfo() {
@@ -208,3 +334,4 @@ class LoginFieldDetector {
 }
 
 new LoginFieldDetector();
+*/

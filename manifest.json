@@ -20,14 +20,19 @@
         "default_title": "OddPass"
     },
     "background": {
-        "scripts": ["src/js/background.js"]
+        "page": "src/html/background.html"
     },
     "content_scripts": [
         {
             "matches": [
-                "*://*/*"
+                "<all_urls>"
             ],
-            "js": ["src/js/content.js"]
+            "js": [
+                "src/js/index.js"
+            ]
         }
+    ],
+    "web_accessible_resources": [
+        "src/js/modules/finder/index.js"
     ]
 }

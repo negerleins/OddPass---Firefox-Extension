@@ -1,0 +1,26 @@
+{
+  "name": "finder",
+  "version": "0.0.1",
+  "description": "Field Finder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/negerleins/OddPass---Firefox-Extension.git"
+  },
+  "keywords": [
+    "finder"
+  ],
+  "author": "negerleins",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/negerleins/OddPass---Firefox-Extension/issues"
+  },
+  "homepage": "https://github.com/negerleins/OddPass---Firefox-Extension#readme",
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
