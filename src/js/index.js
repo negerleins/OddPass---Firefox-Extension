@@ -1,39 +1,43 @@
-const { default: Finder } = import(chrome.runtime.getURL('src/js/modules/finder/index.js'));
+async function Search() {
+    const module = await import(chrome.runtime.getURL('src/js/modules/finder/index.js'));
+    const ModuleClass = module.default;
+    const session = new ModuleClass(window, document);
+
+    session.fields(`
+            input[type="password"],
+            input[type="email"],
+            input[name*="email"],
+            input[name*="user"],
+            input[name*="login"],
+            input[id*="email"],
+            input[id*="user"],
+            input[id*="login"]
+    `).catch((err) => console.log(err)).then((array) => {
+        console.log(array);
+    });
+}
+
 
 let timeout;
 let observer;
 
+console.log("Start-up went through.");
+
 function Observer() {
+    Search();
+
     observer = new MutationObserver((mutations) => {
         if (mutations.some(m => {
             return Array.from(m.addedNodes).some(node =>
                 node.nodeType === 1 &&
                 node.querySelector('input')
-            );
+            ); B
         })) {
-            console.log("timeout");
+            console.log("Update.");
+
             clearTimeout(timeout);
             timeout = setTimeout(() => {
-                const session = new Finder(window, document);
-
-                const test = session.fields(`
-                        input[type="password"],
-                        input[type="email"],
-                        input[name*="email"],
-                        input[name*="user"],
-                        input[name*="login"],
-                        input[id*="email"],
-                        input[id*="user"],
-                        input[id*="login"]
-                `).catch((err) => console.log(err)).then((output) => {
-                    console.log(output);
-                }).finally((output) => {
-                    console.log(output);
-                });
-
-                console.log("Hello");
-
-                console.log(test);
+                Search();
             }, 300);
         }
     });
