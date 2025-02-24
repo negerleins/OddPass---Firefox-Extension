@@ -8,13 +8,13 @@ class Backbone {
     }
 
     async Require(path) {
-        const __import = this.#Import(path);
+        const __import = this.#Import(path); 
 
-        return () =>
-            new Promise(resolve => {
-                setTimeout(() => resolve(__import), 3000);
-            });
-
+        return new Promise ( (resolve, reject) => {
+            __import.then( (res) => {
+                return res;
+            }).finally( (res) => resolve(res) ).catch( (err) => reject(err) )
+        } )
     }
 }
 
