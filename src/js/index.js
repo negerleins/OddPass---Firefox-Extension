@@ -1,3 +1,48 @@
+class Backbone {
+    async #Import(path) {
+        const module = await import(
+            chrome.runtime.getURL(path)
+        );
+
+        return module.default;
+    }
+
+    async Require(path) {
+        const __import = this.#Import(path);
+
+        return () =>
+            new Promise(resolve => {
+                setTimeout(() => resolve(__import), 3000);
+            });
+
+    }
+}
+
+// Backbone
+var backbone = new Backbone();
+
+const finder = backbone.Require('src/js/modules/finder/index.js');
+
+console.log(finder, 1)
+
+const session = new finder(window, document);
+session.fields(`
+        input[type="password"],
+        input[type="email"],
+        input[name*="email"],
+        input[name*="user"],
+        input[name*="login"],
+        input[id*="email"],
+        input[id*="user"],
+        input[id*="login"]
+    `).catch((err) => console.log(err)).then((array) => {
+    console.log(array);
+});
+
+finder.then((module) => {
+    console.log(module, 2)
+});
+
 async function Search() {
     const module = await import(chrome.runtime.getURL('src/js/modules/finder/index.js'));
     const ModuleClass = module.default;
@@ -17,14 +62,13 @@ async function Search() {
     });
 }
 
-
 let timeout;
 let observer;
 
 console.log("Start-up went through.");
 
 function Observer() {
-    Search();
+    //Search();
 
     observer = new MutationObserver((mutations) => {
         if (mutations.some(m => {
