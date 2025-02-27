@@ -7,10 +7,10 @@
   },
   "dependencies": {
     "finder": "file:modules/finder",
-    "extension": "file:modules/extension"
+    "framer": "file:modules/framer"
   },
   "type": "module",
-  "author": "",
+  "author": "negerleins",
   "license": "ISC",
   "description": ""
 }

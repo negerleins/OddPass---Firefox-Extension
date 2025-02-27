@@ -1,110 +1,112 @@
-class Backbone {
-    async #Import(path) {
-        const module = await import(
-            chrome.runtime.getURL(path)
-        );
+"use strict";
 
+class Backbone {
+    async #importModule(path) {
+        const module = await import(chrome.runtime.getURL(path));
         return module.default;
     }
-
-    async Require(path) {
-        const __import = this.#Import(path); 
-
-        return new Promise ( (resolve, reject) => {
-            __import.then( (res) => {
-                return res;
-            }).finally( (res) => resolve(res) ).catch( (err) => reject(err) )
-        } )
+    
+    async require(path) {
+        return await this.#importModule(path);
     }
 }
 
-// Backbone
-var backbone = new Backbone();
+class App {
+    constructor() {
+        this.backbone = new Backbone();
+        this.session = null;
+        this.domObserver = null;
+        this.urlObserver = null;
+        this.timeoutId = null;
+        this.lastUrl = window.location.href;
+    }
 
-const finder = backbone.Require('src/js/modules/finder/index.js');
+    async initialize() {
+        try {
+            const FinderModule = await this.backbone.require('src/js/modules/finder/index.js');
+            this.session = new FinderModule(window, document);
 
-console.log(finder, 1)
+            this.searchFields();
+            this.initDOMObserver();
+            this.initURLObserver();
+        } catch (error) {
+            console.error("Error initializing the app:", error);
+        }
 
-const session = new finder(window, document);
-session.fields(`
-        input[type="password"],
-        input[type="email"],
-        input[name*="email"],
-        input[name*="user"],
-        input[name*="login"],
-        input[id*="email"],
-        input[id*="user"],
-        input[id*="login"]
-    `).catch((err) => console.log(err)).then((array) => {
-    console.log(array);
-});
+    }
 
-finder.then((module) => {
-    console.log(module, 2)
-});
+    searchFields() {
+        const selectors = `input[type = "password"], input[type = "email"], input[name*="email"], input[name *= "user"], input[name *= "login"], input[id *= "email"], input[id *= "user"], input[id *= "login"]`;
+        
+        this.session.fields(selectors).then(array => {
+            console.log("Found fields:", array);
+        }).catch(error => {
+            console.error("Error searching fields:", error);
+        });
+    }
 
-async function Search() {
-    const module = await import(chrome.runtime.getURL('src/js/modules/finder/index.js'));
-    const ModuleClass = module.default;
-    const session = new ModuleClass(window, document);
+    initDOMObserver() {
+        if (this.domObserver) {
+            this.domObserver.disconnect();
+        }
+        
+        this.domObserver = new MutationObserver((mutations) => {
+            const hasNewInput = mutations.some(mutation =>
+                Array.from(mutation.addedNodes).some(node =>
+                    node.nodeType === 1 && node.querySelector("input")
+                )
+            );
 
-    session.fields(`
-            input[type="password"],
-            input[type="email"],
-            input[name*="email"],
-            input[name*="user"],
-            input[name*="login"],
-            input[id*="email"],
-            input[id*="user"],
-            input[id*="login"]
-    `).catch((err) => console.log(err)).then((array) => {
-        console.log(array);
-    });
+            if (hasNewInput) {
+                console.log("DOM update detected. Scheduling search...");
+                clearTimeout(this.timeoutId);
+                this.timeoutId = setTimeout(() => {
+                    this.searchFields();
+                }, 300);
+            }
+        });
+
+        this.domObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+    }
+
+    initURLObserver() {
+        if (this.urlObserver) {
+            this.urlObserver.disconnect();
+        }
+
+        this.urlObserver = new MutationObserver(() => {
+            const currentUrl = window.location.href;
+
+            if (currentUrl !== this.lastUrl) {
+                this.lastUrl = currentUrl;
+                console.log("URL change detected:", this.lastUrl);
+                this.initDOMObserver();
+                this.searchFields();
+            }
+        });
+
+        this.urlObserver.observe(document, {
+            childList: true,
+            subtree: true
+        });
+
+    }
 }
 
-let timeout;
-let observer;
-
-console.log("Start-up went through.");
-
-function Observer() {
-    //Search();
-
-    observer = new MutationObserver((mutations) => {
-        if (mutations.some(m => {
-            return Array.from(m.addedNodes).some(node =>
-                node.nodeType === 1 &&
-                node.querySelector('input')
-            ); B
-        })) {
-            console.log("Update.");
-
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                Search();
-            }, 300);
-        }
-    });
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+function startApp() {
+    const app = new App();
+    app.initialize();
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => Observer());
+    document.addEventListener('DOMContentLoaded', startApp);
 } else {
-    Observer()
-}
-
-let lastUrl = window.location.href;
-new MutationObserver(() => {
-    const currentUrl = window.location.href;
-    if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
-        Observer()
-    }
-}).observe(document, { subtree: true, childList: true })
+    startApp();
+};
 
 /*
 // content.js
